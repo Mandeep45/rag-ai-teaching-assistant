@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Teaching Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">
+        <div class="logo-icon">🎓</div>
+        <div>
+            <div class="logo-text">AI Teaching Assistant</div>
+            <div class="logo-sub">Powered by Khan Academy</div>
+        </div>
+    </div>
+    <div class="badge">Created by Mandeep Singh</div>
+</div>
+
+<div class="main">
+    <div class="sidebar">
+        <div class="sidebar-title">Menu</div>
+        <div class="nav-item active" onclick="showChat()">💬 Chat</div>
+        <div class="nav-item" onclick="showUpload()">📄 My Documents</div>
+        <div class="nav-item" onclick="showAbout()">ℹ️ About</div>
+    </div>
+
+    <div class="chat-area">
+        <div class="stats">
+            <div class="stat"><span>23,683</span> chunks indexed</div>
+            <div class="stat"><span>384</span> dimensions</div>
+            <div class="stat">FAISS · <span>L2</span> search</div>
+        </div>
+
+        <!-- Chat Section -->
+        <div class="chat-messages" id="chat-box">
+            <div class="msg-row">
+                <div class="avatar bot">AI</div>
+                <div class="bubble bot">
+                    Hello! I am your AI Teaching Assistant, trained on Khan Academy's full video library. Ask me anything about math, science, history, or any subject!
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="upload-section" style="display:none; flex-direction:column; padding:30px; gap:16px; flex:1;">
+            <h2 style="font-size:18px; color:#1a73e8;">📄 My Documents</h2>
+            <p style="font-size:13px; color:#888;">Upload your own PDF or TXT files to expand the knowledge base.</p>
+            <input type="file" id="file-input" accept=".pdf,.txt" />
+            <button class="upload-btn" onclick="uploadFile()" style="width:200px;">+ Upload Document</button>
+            <p id="upload-status"></p>
+        </div>
+
+        <!-- About Section -->
+        <div id="about-section" style="display:none; flex-direction:column; padding:30px; gap:12px; flex:1;">
+            <h2 style="font-size:18px; color:#1a73e8;">ℹ️ About</h2>
+            <p style="font-size:14px; line-height:1.8; color:#333;">
+                <b>Dataset:</b> Khan Academy (7,728 videos, 23,683 chunks)<br>
+                <b>Embeddings:</b> BAAI/bge-small-en-v1.5 (384 dimensions)<br>
+                <b>Vector Store:</b> FAISS (L2 search)<br>
+                <b>LLM:</b> LLaMA 3.3 70B via Groq<br>
+                <b>Framework:</b> Flask + Python<br>
+                <b>Spell Correction:</b> RapidFuzz<br><br>
+                <b>Created by:</b> Mandeep Singh
+            </p>
+        </div>
+
+        <div class="input-bar" id="input-bar">
+            <div class="input-wrap">
+                <input type="text" id="question" placeholder="Ask a question about any subject..." />
+                <button class="send-btn" onclick="askQuestion()">➤</button>
+            </div>
+            <div class="hint">Press Enter to send · Spell correction enabled · Sources cited automatically</div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
