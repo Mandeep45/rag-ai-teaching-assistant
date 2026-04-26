@@ -17,3 +17,4 @@ webvtt-py==0.5.1
 Werkzeug==3.1.8
 nltk==3.9.4
 gunicorn==21.2.0
+python-dotenv==1.0.0
