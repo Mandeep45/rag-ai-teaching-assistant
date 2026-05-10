@@ -23,6 +23,7 @@
     <div class="sidebar">
         <div class="sidebar-title">Menu</div>
         <div class="nav-item active" onclick="showChat()">💬 Chat</div>
+        <div class="nav-item" onclick="showHistory()">🕐 History</div>
         <div class="nav-item" onclick="showUpload()">📄 My Documents</div>
         <div class="nav-item" onclick="showAbout()">ℹ️ About</div>
     </div>
@@ -42,6 +43,13 @@
                     Hello! I am your AI Teaching Assistant, trained on Khan Academy's full video library. Ask me anything about math, science, history, or any subject!
                 </div>
             </div>
+        </div>
+
+        <!-- History Section -->
+        <div id="history-section" style="display:none; flex-direction:column; padding:30px; gap:12px; flex:1; overflow-y:auto;">
+            <h2 style="font-size:18px; color:#1a73e8;">🕐 Chat History</h2>
+            <p style="font-size:13px; color:#888;">Your previous conversations are saved permanently.</p>
+            <div id="history-list"></div>
         </div>
 
         <!-- Upload Section -->
