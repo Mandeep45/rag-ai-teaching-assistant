@@ -1,25 +1,70 @@
-let chatHistory = JSON.parse(sessionStorage.getItem("chatHistory") || "[]");
+let chatHistory = [];
+let sessionId = null; // always start fresh — no sessionStorage
 
-function restoreChatHistory() {
-    chatHistory.forEach(chat => {
-        addUserMessage(chat.question);
-        addBotMessage(chat.answer, []);
-    });
-}
 
 function showChat() {
     document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
     event.target.classList.add("active");
     document.getElementById("chat-box").style.display = "flex";
+    document.getElementById("history-section").style.display = "none";
     document.getElementById("upload-section").style.display = "none";
     document.getElementById("about-section").style.display = "none";
     document.getElementById("input-bar").style.display = "block";
+}
+
+async function showHistory() {
+    document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+    event.target.classList.add("active");
+    document.getElementById("chat-box").style.display = "none";
+    document.getElementById("history-section").style.display = "flex";
+    document.getElementById("upload-section").style.display = "none";
+    document.getElementById("about-section").style.display = "none";
+    document.getElementById("input-bar").style.display = "none";
+
+    const response = await fetch("/sessions");
+    const sessions = await response.json();
+    const historyList = document.getElementById("history-list");
+
+    if (sessions.length === 0) {
+        historyList.innerHTML = "<p style='color:#888;font-size:13px;'>No conversations yet.</p>";
+        return;
+    }
+
+    historyList.innerHTML = sessions.map(s => `
+        <div onclick="loadSession('${s.session_id}')" style="padding:12px 16px; background:white; border:1px solid #e0e0e0; border-radius:10px; margin-bottom:8px; cursor:pointer; transition:background 0.15s;">
+            <div style="font-size:13px; font-weight:500; color:#333;">${s.first_question.slice(0, 50)}${s.first_question.length > 50 ? '...' : ''}</div>
+            <div style="font-size:11px; color:#888; margin-top:4px;">${s.total_messages} messages · ${s.started}</div>
+        </div>
+   `).join("");
+}
+
+async function loadSession(sid) {
+    const response = await fetch(`/history/${sid}`);
+    const history = await response.json();
+
+    document.getElementById("history-section").style.display = "none";
+    document.getElementById("chat-box").style.display = "flex";
+    document.getElementById("input-bar").style.display = "block";
+
+    const chatBox = document.getElementById("chat-box");
+    chatBox.innerHTML = "";
+    chatHistory = [];
+
+    history.forEach(chat => {
+        addUserMessage(chat.question);
+        addBotMessage(chat.answer, chat.sources);
+        chatHistory.push({question: chat.question, answer: chat.answer});
+    });
+
+    sessionId = sid;
+    sessionStorage.setItem("sessionId", sid);
 }
 
 function showUpload() {
     document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
     event.target.classList.add("active");
     document.getElementById("chat-box").style.display = "none";
+    document.getElementById("history-section").style.display = "none";
     document.getElementById("upload-section").style.display = "flex";
     document.getElementById("about-section").style.display = "none";
     document.getElementById("input-bar").style.display = "none";
@@ -29,6 +74,7 @@ function showAbout() {
     document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
     event.target.classList.add("active");
     document.getElementById("chat-box").style.display = "none";
+    document.getElementById("history-section").style.display = "none";
     document.getElementById("upload-section").style.display = "none";
     document.getElementById("about-section").style.display = "flex";
     document.getElementById("input-bar").style.display = "none";
@@ -60,11 +106,20 @@ async function askQuestion() {
         const response = await fetch("/ask", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({question, chat_history: chatHistory})
+            body: JSON.stringify({
+                question,
+                chat_history: chatHistory,
+                session_id: sessionId
+            })
         });
 
         const data = await response.json();
         document.getElementById("typing")?.remove();
+
+        if (data.session_id) {
+            sessionId = data.session_id;
+            sessionStorage.setItem("sessionId", sessionId);
+        }
 
         const seen = new Set();
         const uniqueSources = data.sources.filter(s => {
@@ -74,9 +129,7 @@ async function askQuestion() {
         });
 
         addBotMessage(data.answer, uniqueSources);
-
         chatHistory.push({question, answer: data.answer});
-        sessionStorage.setItem("chatHistory", JSON.stringify(chatHistory));
 
     } catch (error) {
         document.getElementById("typing")?.remove();
@@ -154,7 +207,6 @@ async function uploadFile() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    restoreChatHistory();
     document.getElementById("question").addEventListener("keypress", function(e) {
         if (e.key === "Enter") askQuestion();
     });

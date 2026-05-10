@@ -8,8 +8,11 @@ from assistant import ask
 from document_processor import process_document
 from spell_corrector import build_vocabulary
 from dotenv import load_dotenv
+from database import init_db, save_message, get_history, get_all_sessions
+import uuid
 
 load_dotenv()
+init_db()
 
 app = Flask(__name__)
 
@@ -47,12 +50,28 @@ def ask_question():
     data = request.json
     question = data.get("question", "")
     chat_history = data.get("chat_history", [])
+    session_id = data.get("session_id") or str(uuid.uuid4())
 
     if not question:
         return jsonify({"error": "No question provided"}), 400
 
     response = ask(question, index, metadata, chat_history, vocabulary)
+
+    # save to database
+    save_message(session_id, question, response["answer"], response["sources"])
+
+    response["session_id"] = session_id
     return jsonify(response)
+
+@app.route("/history/<session_id>", methods=["GET"])
+def get_session_history(session_id):
+    history = get_history(session_id)
+    return jsonify(history)
+
+@app.route("/sessions", methods=["GET"])
+def get_sessions():
+    sessions = get_all_sessions()
+    return jsonify(sessions)
 
 @app.route("/upload", methods=["POST"])
 def upload_document():
