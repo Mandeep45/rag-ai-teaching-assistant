@@ -1,6 +1,7 @@
 from groq import Groq
 from retriever import retrieve
 from spell_corrector import correct_spelling
+from reranker import rerank
 from dotenv import load_dotenv
 import os
 
@@ -14,11 +15,11 @@ def ask(question, index, metadata, chat_history=[], vocabulary=[]):
     index: FAISS index
     metadata: chunk metadata
     chat_history: list of previous questions and answers
+    vocabulary: list of words for spell correction
     """
-     # correct spelling mistakes
+    # correct spelling mistakes
     question = correct_spelling(question, vocabulary)
 
-    # retrieve relevant chunks
     # build enriched query using chat history
     if chat_history:
         last_question = chat_history[-1]["question"]
@@ -26,8 +27,8 @@ def ask(question, index, metadata, chat_history=[], vocabulary=[]):
     else:
         enriched_query = question
 
-    # retrieve relevant chunks using enriched query
-    results = retrieve(enriched_query, index, metadata)
+    # retrieve top 20 chunks from FAISS
+    results = retrieve(enriched_query, index, metadata, top_k=20)
 
     if not results:
         return {
@@ -35,7 +36,10 @@ def ask(question, index, metadata, chat_history=[], vocabulary=[]):
             "sources": []
         }
 
-    # build context from retrieved chunks
+    # rerank to get best 5
+    results = rerank(question, results, top_k=5)
+
+    # build context from reranked chunks
     context = ""
     for i, result in enumerate(results):
         context += f"Source {i+1}: {result['title']}\n"
