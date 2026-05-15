@@ -7,16 +7,9 @@ import os
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+USE_RERANKER = os.getenv("USE_RERANKER", "false").lower() == "true"
 
 def ask(question, index, metadata, chat_history=[], vocabulary=[]):
-    """
-    Answer a student's question using RAG.
-    question: student's question
-    index: FAISS index
-    metadata: chunk metadata
-    chat_history: list of previous questions and answers
-    vocabulary: list of words for spell correction
-    """
     # correct spelling mistakes
     question = correct_spelling(question, vocabulary)
 
@@ -27,8 +20,9 @@ def ask(question, index, metadata, chat_history=[], vocabulary=[]):
     else:
         enriched_query = question
 
-    # retrieve top 20 chunks from FAISS
-    results = retrieve(enriched_query, index, metadata, top_k=20)
+    # retrieve chunks — more if reranker enabled
+    top_k = 20 if USE_RERANKER else 5
+    results = retrieve(enriched_query, index, metadata, top_k=top_k)
 
     if not results:
         return {
@@ -36,10 +30,11 @@ def ask(question, index, metadata, chat_history=[], vocabulary=[]):
             "sources": []
         }
 
-    # rerank to get best 5
-    results = rerank(question, results, top_k=5)
+    # rerank if enabled
+    if USE_RERANKER:
+        results = rerank(question, results, top_k=5)
 
-    # build context from reranked chunks
+    # build context from chunks
     context = ""
     for i, result in enumerate(results):
         context += f"Source {i+1}: {result['title']}\n"
@@ -62,7 +57,6 @@ Answer:"""
         messages.append({"role": "user", "content": chat["question"]})
         messages.append({"role": "assistant", "content": chat["answer"]})
 
-    # add current question with context
     messages.append({"role": "user", "content": prompt})
 
     # call Groq API
